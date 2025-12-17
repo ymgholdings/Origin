@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-This document defines an **expanded five-agent architecture** for ORIGIN/Aureon development that leverages the unique strengths of ChatGPT, Gemini, Grok, DeepMind, and Claude. This evolution of the original three-agent system adds specialized capabilities for research synthesis, safety validation, and algorithmic optimization.
+This document defines an **expanded five-agent architecture** for ORIGIN/Aureon development that leverages the unique strengths of ChatGPT, Gemini, Grok, DeepSeek, and Claude. This evolution of the original three-agent system adds specialized capabilities for research synthesis, safety validation, and deep mathematical reasoning.
 
 ### Architecture Evolution:
 
@@ -20,7 +20,7 @@ ChatGPT (Moderator)         →      ChatGPT GPT-5.2 (Program Manager)
 Gemini GEM (Curator)        →      Gemini GEM (Curator) + Gemini 3 (Research)
 Claude (Builder)            →      Claude Sonnet 4.5 (Implementation)
                             +      Grok 4 (Safety & Reasoning)
-                            +      DeepMind AlphaEvolve (Optimization)
+                            +      DeepSeek V3.2 (Reasoning & Problem-Solving)
 ```
 
 ### Rating: ⭐⭐⭐⭐⭐ (5/5 - Exceptional Evolution)
@@ -254,93 +254,111 @@ Rationale: [Explanation]
 
 ---
 
-### 1.5 Agent 5: DeepMind Agent (AlphaEvolve) — Research Optimizer
+### 1.5 Agent 5: DeepSeek V3.2 — Complex Reasoning & Problem-Solving Specialist
 
-**Role:** Algorithmic discovery and optimization
+**Role:** Deep reasoning, advanced mathematics, and problem-solving expert
 
-**Model Strengths (AlphaEvolve):**
-- Pairs Gemini models with automated evaluators
-- Discovers and optimizes code and algorithms
-- Proven track record (Google data-center scheduling, hardware design)
-- Novel solutions to mathematical problems
+**Model Strengths (DeepSeek V3.2):**
+- World-leading reasoning capabilities (rivals Gemini-3.0-Pro)
+- Gold-level performance on international math competitions (IMO, IOI)
+- Integrated thinking directly into tool use
+- Multi-language reasoning and problem-solving
+- DeepSeek-V3.2-Speciale variant optimized for mathematical reasoning
 
 **Primary Function:**
-> "Discover and optimize algorithms, architectures, and system-level improvements."
+> "Handle tasks that require deep reasoning, advanced mathematics, or problem-solving across multiple domains."
 
 **Key Responsibilities:**
 
-**Algorithmic Optimization:**
-- Improve computational efficiency of existing algorithms
-- Discover novel algorithmic approaches
-- Optimize for specific hardware (GPU, TPU, etc.)
-- Reduce time/space complexity
+**Mathematical Reasoning:**
+- Derive proofs and validate mathematical correctness
+- Solve complex mathematical problems
+- Verify derivations and transformations
+- Check for logical consistency in formal systems
 
-**System-Level Improvements:**
-- Propose architectural enhancements
-- Optimize data flow and processing pipelines
-- Improve resource utilization
-- Identify bottlenecks and solutions
+**Algorithmic Problem-Solving:**
+- Draft algorithms for complex problems
+- Explore alternative algorithmic approaches
+- Analyze algorithmic correctness and complexity
+- Provide structured solutions with reasoning traces
 
-**Mathematical Discovery:**
-- Find improved formulations
-- Discover optimization shortcuts
-- Propose alternative mathematical approaches
-- Validate numerical stability
+**Deep Analysis:**
+- Cross-check mathematical derivations from other agents
+- Identify logical flaws or gaps in reasoning
+- Propose alternative formulations when problems arise
+- Validate theoretical soundness of approaches
+
+**Reasoning Integration:**
+- Provide thinking process alongside solutions
+- Integrate reasoning with structured tool use
+- Explain complex concepts clearly
+- Bridge theory and implementation
 
 **Specific Applications to ORIGIN:**
 ```
-AlphaEvolve Tasks for ORIGIN:
-✓ Optimize Aureon Transform implementation
-✓ Improve RQML convergence algorithms
-✓ Optimize tensor operations for hardware
-✓ Discover efficient ensemble validation methods
-✓ Improve Model Mesh routing efficiency
-✓ Optimize supervisor scheduling algorithms
+DeepSeek Tasks for ORIGIN:
+✓ Derive and verify Aureon Transform mathematical properties
+✓ Validate RQML convergence proofs
+✓ Solve complex tensor algebra problems
+✓ Design and analyze novel algorithms
+✓ Verify correctness of ensemble validation logic
+✓ Derive optimal supervisor scheduling approaches
+✓ Prove safety properties of ORIGIN components
 ```
 
 **Deliverables to Claude:**
 ```
-ALPHAEVOLVE OPTIMIZATION REPORT
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Component: [e.g., Aureon Transform]
-Current Performance: [metrics]
-Optimization Goal: [target]
+DEEPSEEK REASONING REPORT
+━━━━━━━━━━━━━━━━━━━━━━━━━
+Problem: [Description]
+Complexity: [Mathematical/Algorithmic analysis]
 
-PROPOSED CHANGES:
-1. Algorithm Modification: [description]
-   - Expected Improvement: [X% faster, Y% less memory]
-   - Implementation: [pseudocode or guidance]
+REASONING PROCESS:
+[Step-by-step thinking and exploration]
 
-2. Architectural Change: [description]
-   - Expected Improvement: [metrics]
-   - Trade-offs: [considerations]
+SOLUTION:
+1. Mathematical Formulation:
+   - [Formal definition]
+   - [Key properties]
+   - [Proofs of correctness]
+
+2. Algorithmic Approach:
+   - [Pseudocode or structured algorithm]
+   - [Complexity analysis: Time O(...), Space O(...)]
+   - [Correctness argument]
+
+3. Alternative Approaches (if applicable):
+   - Option A: [description + trade-offs]
+   - Option B: [description + trade-offs]
 
 VALIDATION:
-- Tested on: [benchmark datasets]
-- Results: [performance comparison]
-- Safety: [no degradation in correctness]
+- Logical Consistency: [✓ Verified]
+- Edge Cases Considered: [list]
+- Theoretical Soundness: [✓ Proven]
 
-IMPLEMENTATION GUIDANCE:
-- Files to modify: [list]
-- Dependencies: [requirements]
-- Testing strategy: [approach]
+IMPLEMENTATION GUIDANCE FOR CLAUDE:
+- Key invariants to maintain: [list]
+- Critical checks to include: [list]
+- Test cases to cover: [list]
+- Potential pitfalls: [list]
 ```
 
 **Integration with Claude:**
-- Claude receives optimization proposals
-- Claude implements and tests changes
-- Claude references AlphaEvolve recommendations in commits
-- Claude validates performance improvements
+- Claude receives reasoning reports and algorithms
+- Claude implements with understanding of underlying logic
+- Claude references DeepSeek analysis in commits
+- Claude validates implementation matches reasoning
 
 **Critical Constraints:**
 ```
-❌ AlphaEvolve does NOT directly modify production code
-❌ AlphaEvolve does NOT override architectural decisions
-✅ AlphaEvolve PROVIDES optimized alternatives
-✅ AlphaEvolve VALIDATES improvements before proposing
+❌ DeepSeek does NOT directly modify production code
+❌ DeepSeek does NOT override architectural decisions
+✅ DeepSeek PROVIDES rigorous reasoning and solutions
+✅ DeepSeek VALIDATES mathematical correctness
+✅ DeepSeek EXPLAINS thinking process for transparency
 ```
 
-**Think of as:** Senior Performance Engineer / Algorithm Researcher / Optimization Specialist
+**Think of as:** Mathematical Advisor / Theoretical Computer Scientist / Algorithm Designer
 
 ---
 
@@ -390,20 +408,20 @@ IMPLEMENTATION GUIDANCE:
             └────────────────┬───────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────┐
-│  PHASE 3: OPTIMIZATION (Optional)                           │
+│  PHASE 3: REASONING & ANALYSIS (As Needed)                  │
 └─────────────────────────────────────────────────────────────┘
                               ↓
             ┌────────────────────────────────────────┐
-            │ DeepMind AlphaEvolve: Optimization     │
-            │ • Analyze algorithms for improvements  │
-            │ • Propose optimized implementations    │
-            │ • Validate performance gains           │
+            │ DeepSeek V3.2: Deep Reasoning          │
+            │ • Derive mathematical proofs           │
+            │ • Design and analyze algorithms        │
+            │ • Validate theoretical soundness       │
             └────────────────┬───────────────────────┘
                               ↓
             ┌────────────────────────────────────────┐
-            │ ChatGPT Moderator: Review Proposals   │
-            │ • Assess optimization trade-offs      │
-            │ • Approve or reject changes            │
+            │ ChatGPT Moderator: Review Analysis    │
+            │ • Verify reasoning correctness         │
+            │ • Approve algorithmic approaches       │
             └────────────────┬───────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────┐
@@ -415,7 +433,7 @@ IMPLEMENTATION GUIDANCE:
             │ • Parse structured LaTeX               │
             │ • Extract and organize code            │
             │ • Resolve version chains               │
-            │ • Implement optimizations (if approved)│
+            │ • Implement DeepSeek algorithms        │
             │ • Write tests                          │
             │ • Build repository structure           │
             └────────────────┬───────────────────────┘
@@ -462,8 +480,9 @@ IMPLEMENTATION GUIDANCE:
 | **Long document (100K+ tokens)** | Gemini GEM | Gemini 3 | ChatGPT |
 | **Multimodal research** | Gemini 3 | — | ChatGPT |
 | **Math derivation** | Gemini GEM | — | ChatGPT |
-| **Code implementation** | Claude | AlphaEvolve | Grok 4 |
-| **Algorithm optimization** | AlphaEvolve | Claude | Grok 4 |
+| **Code implementation** | Claude | DeepSeek | Grok 4 |
+| **Mathematical proofs** | DeepSeek | Grok 4 | ChatGPT |
+| **Algorithm design** | DeepSeek | Claude | Grok 4 |
 | **Security review** | Grok 4 | — | ChatGPT |
 | **Architectural decision** | ChatGPT | All (advisory) | — |
 | **Production deployment** | Claude | Grok 4 | ChatGPT |
@@ -494,10 +513,10 @@ These instructions replace previous Claude guidelines and define Claude's role w
    - With clear instruction set
    - Including version selection guidance
 
-3. **Optimization proposals from DeepMind AlphaEvolve**
+3. **Reasoning reports and algorithms from DeepSeek V3.2**
    - After ChatGPT Moderator approval
-   - With explicit implementation guidance
-   - Including validation results
+   - With mathematical proofs and correctness arguments
+   - Including implementation guidance and edge cases
 
 **Claude will REJECT and ESCALATE:**
 
@@ -505,7 +524,7 @@ These instructions replace previous Claude guidelines and define Claude's role w
 ❌ Notation-dense documents without GEM processing
 ❌ Files without proper provenance headers
 ❌ Ambiguous version references
-❌ Unapproved optimization proposals
+❌ Unapproved algorithmic proposals
 
 **Rejection Process:**
 ```
@@ -545,14 +564,18 @@ These instructions replace previous Claude guidelines and define Claude's role w
    - Escalate to Moderator for judgment calls
    - Document assumption if decision is unavoidable
 
-6. Implement unapproved optimizations
-   - Even if AlphaEvolve proposes changes
+6. Implement unapproved algorithms
+   - Even if DeepSeek proposes solutions
    - Wait for Moderator approval before implementing
 
 7. Skip Grok validation for critical code
    - Security-sensitive implementations require Grok review
-   - Mathematical proofs require Grok validation
+   - Mathematical implementations require Grok validation
    - Production deployments require Grok approval
+
+8. Modify DeepSeek reasoning without consultation
+   - DeepSeek's reasoning output is authoritative for mathematical correctness
+   - Do not alter unless instructed by Moderator
 ```
 
 ---
@@ -576,23 +599,31 @@ If any check fails → Escalate to Moderator
 
 ---
 
-#### **Step 2: Integrate DeepMind Recommendations (If Provided)**
+#### **Step 2: Integrate DeepSeek Reasoning (If Provided)**
 
 ```
 PROCESS:
-1. Receive AlphaEvolve optimization report
+1. Receive DeepSeek reasoning report with algorithms/proofs
 2. Verify Moderator approval exists
-3. Review proposed changes and expected improvements
-4. Assess implementation complexity and risks
-5. Plan implementation approach
-6. Document optimization in commit messages
+3. Review mathematical correctness and reasoning process
+4. Understand key invariants and edge cases
+5. Plan implementation approach maintaining correctness
+6. Document DeepSeek input in commit messages
+
+IMPORTANT:
+- DeepSeek's reasoning output is AUTHORITATIVE for mathematical correctness
+- Do NOT modify algorithms unless consulted with Moderator
+- Implement exactly as specified while following coding standards
+- Validate implementation matches DeepSeek's logical structure
 
 FORMAT for commits:
-"Optimize [component] based on AlphaEvolve recommendation
+"Implement [component] based on DeepSeek reasoning
 
- - Expected improvement: [metrics from report]
- - Ref: AlphaEvolve Report [date/ID]
- - Validation: [test results]"
+ - Algorithm designed by: DeepSeek V3.2
+ - Complexity: [Time/Space from reasoning report]
+ - Ref: DeepSeek Report [date/ID]
+ - Key invariants: [list from report]
+ - Validation: [test results matching edge cases]"
 ```
 
 ---
@@ -672,10 +703,10 @@ EXAMPLES:
 "feat: Aureon Transform - Add GPU acceleration support
 
 Implement CUDA kernels for Aureon Transform operations.
-Based on AlphaEvolve optimization recommendations.
+Based on DeepSeek reasoning and algorithm design.
 
-- Expected speedup: 10x on NVIDIA A100
-- Ref: AlphaEvolve Report 2025-12-15
+- Algorithm designed by: DeepSeek V3.2
+- Ref: DeepSeek Report 2025-12-15
 - Tests: GPU unit tests added (tests/aureon/test_gpu.py)
 - Coverage: 85%"
 
@@ -704,7 +735,7 @@ Mandatory (MUST invoke):
 ✓ Before production deployments
 ✓ For security-sensitive code (auth, crypto, network)
 ✓ When implementing mathematical proofs or algorithms
-✓ After AlphaEvolve optimization implementation
+✓ After DeepSeek algorithm implementation
 
 Recommended (SHOULD invoke):
 ✓ For complex architectural changes
@@ -817,7 +848,7 @@ WAIT for explicit approval before proceeding
 #### **For Optimizations:**
 
 ```
-WHEN: Identifying optimization opportunities beyond AlphaEvolve
+WHEN: Identifying complex reasoning or algorithm design needs
 
 PROCESS:
 1. Document current performance
@@ -961,8 +992,8 @@ PRE-DEPLOYMENT CHECKLIST
 │ (Builder)   │ Reports  │ summaries   │ curated  │ validation│
 │             │ Escalates│             │ files    │           │
 ├─────────────┼──────────┼─────────────┼──────────┼───────────┤
-│ AlphaEvolve │ Submits  │ —           │ —        │ —         │
-│ (Optimizer) │ proposals│             │          │           │
+│ DeepSeek    │ Submits  │ —           │ —        │ —         │
+│ (Reasoning) │ proofs   │             │          │           │
 └─────────────┴──────────┴─────────────┴──────────┴───────────┘
 
 Legend:
@@ -991,7 +1022,8 @@ Legend:
 │ Code style                   │ Claude (follows standards)│
 │ Research synthesis           │ Gemini 3                  │
 │ Segmentation boundaries      │ Gemini GEM                │
-│ Algorithm optimization       │ AlphaEvolve → Moderator   │
+│ Mathematical reasoning       │ DeepSeek V3.2             │
+│ Algorithm design             │ DeepSeek → Moderator      │
 └──────────────────────────────┴───────────────────────────┘
 ```
 
@@ -1006,7 +1038,7 @@ Legend:
 | **Roles** | Moderator, Curator, Builder | + Research, Safety, Optimizer |
 | **Gemini Usage** | GEM only (curation) | GEM + Gemini 3 (research) |
 | **Safety** | Moderator review | Dedicated Grok 4 validation |
-| **Optimization** | Manual/Claude | Dedicated AlphaEvolve |
+| **Deep Reasoning** | Not addressed | Dedicated DeepSeek |
 | **Multimodal** | Not addressed | Gemini 3 capability |
 | **Context** | Standard | 1M tokens (Gemini 3) |
 | **Validation** | Single layer | Multi-layer (Grok + Moderator) |
@@ -1026,9 +1058,9 @@ Legend:
 - **Impact:** Higher confidence in correctness and safety
 
 **3. Optimization Pipeline**
-- **Added:** DeepMind AlphaEvolve for algorithmic optimization
-- **Benefit:** Discovers performance improvements Claude might miss
-- **Impact:** More efficient implementation of ORIGIN
+- **Added:** DeepSeek V3.2 for deep mathematical reasoning
+- **Benefit:** World-class mathematical proofs and algorithm design
+- **Impact:** More rigorous and theoretically sound ORIGIN implementation
 
 **4. Role Clarity**
 - **Enhanced:** Clearer separation between Gemini 3 (creative) and GEM (preservative)
@@ -1070,10 +1102,10 @@ Legend:
    - Define critical code categories requiring Grok
    - Create validation report template
 
-3. **Establish AlphaEvolve Workflow**
-   - Define optimization request format
-   - Create approval process for proposals
-   - Set up performance benchmarking
+3. **Establish DeepSeek Integration**
+   - Define reasoning request format
+   - Create approval process for algorithms
+   - Set up correctness validation
 
 ---
 
@@ -1119,7 +1151,7 @@ The five-agent architecture represents a **significant evolution** of the origin
 **Key Strengths:**
 1. **Specialized Expertise:** Each agent optimally uses its model's strengths
 2. **Multi-Layer Validation:** Grok provides independent safety checks
-3. **Performance Focus:** AlphaEvolve brings world-class optimization
+3. **Mathematical Rigor:** DeepSeek brings world-class reasoning
 4. **Research Depth:** Gemini 3 handles massive context and multimodal content
 5. **Clear Boundaries:** Roles and responsibilities are precisely defined
 
