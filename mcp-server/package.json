@@ -1,0 +1,36 @@
+{
+  "name": "origin-coordination-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for coordinating the five-agent ORIGIN development system",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc && node -e \"require('fs').chmodSync('dist/index.js', '755')\"",
+    "dev": "tsx src/index.ts",
+    "inspector": "tsx src/index.ts",
+    "prepare": "npm run build",
+    "watch": "tsc --watch"
+  },
+  "keywords": [
+    "mcp",
+    "server",
+    "multi-agent",
+    "coordination",
+    "origin",
+    "aureon"
+  ],
+  "author": "ORIGIN Development Team",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "bin": {
+    "origin-coordination-mcp": "./dist/index.js"
+  }
+}
