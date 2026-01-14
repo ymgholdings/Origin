@@ -1,100 +1,186 @@
-# ORIGIN TASK TAXONOMY
+# ORIGIN Task Taxonomy
 
-## Architecture
+This taxonomy standardizes how ORIGIN Conductor classifies work, assigns the right model/tools, and enforces acceptance criteria. Each task type includes: intent, typical inputs/outputs, and a definition of done.
 
-### Definition
-The structure of the system, consisting of the software components, the externally visible properties of those components, and the relationships between them.
+## 1) Architecture and System Design
+**Intent:** Define or refine system structure, module boundaries, interfaces, runtime contracts.
 
-### Importance
-Determines the system's performance, maintainability, and reusability.
+**Inputs**
+- Existing repo structure and specs
+- Target constraints (performance, security, portability)
 
-### In Origin
-Origin's architecture is modular and scalable, designed to accommodate new features and enhancements without disrupting existing functionality.
+**Outputs**
+- Updated architecture docs (diagrams optional)
+- Interface contracts, module boundaries, dependency rules
+- ADRs (architecture decision records) when decisions are non-trivial
 
-## Aureon/RQML Datasets
+**Done when**
+- Interfaces are explicit and testable
+- Decisions are recorded with rationale and tradeoffs
+- No ambiguity about module ownership and data flow
 
-### Definition
-Data sets used for training and validating Origin's machine learning models.
+## 2) Aureon / RQML Dataset Lifecycle
+**Intent:** Generate, refine, validate, and lock datasets (Dn → Dn+k′) with traceable invariants.
 
-### Importance
-Provide a ground truth for model training and validation, ensuring that Origin's algorithms perform accurately and reliably.
+**Subtasks**
+- Dataset synthesis (generate)
+- Consistency audit (audit)
+- Refinement loop (refine)
+- Cross-model validation (validate)
+- Convergence check (converge)
+- Lock/seal (lock)
 
-### In Origin
-Origin uses Aureon/RQML datasets extensively, with rigorous quality control measures in place to ensure their accuracy and relevance.
+**Outputs**
+- Dataset manifest (scope, primitives, operators, assumptions)
+- Validation matrix (what was checked, by whom, how)
+- Convergence report (metrics, thresholds, stop conditions)
+- Lock certificate (fingerprints, version tag)
 
-## Validation
+**Done when**
+- Dataset is either explicitly “in-flight” or explicitly “locked”
+- Lock includes a deterministic fingerprint and reproducible manifest
+- Any unresolved uncertainties are documented as next tasks
 
-### Definition
-The process of checking that a system meets specifications and that it fulfills its intended purpose.
+## 3) Simulation and Stress Testing
+**Intent:** Probe stability envelopes, failure modes, and parameter sensitivities without changing primitives.
 
-### Importance
-Ensures that Origin is functioning as expected and that it meets all necessary requirements and standards.
+**Subtasks**
+- Parameter sweep
+- Resolution sensitivity analysis
+- Coupled envelope mapping
+- Regression tests across known stable regions
 
-### In Origin
-Validation in Origin is an ongoing process involving continuous testing and review.
+**Outputs**
+- Simulation report with pass/fail criteria
+- Boundary tables and stability regions (“islands/valleys”)
+- Recommendations for regularization or model constraints
 
-## Simulations
+**Done when**
+- Failure modes are classified (numerical vs intrinsic vs mixed)
+- Stability boundaries are documented in reproducible terms
+- Proposed mitigations are testable
 
-### Definition
-The use of models to recreate and analyze the behavior or performance of a system.
+## 4) Formal Methods and Verification
+**Intent:** Ensure internal consistency of math/specs and correctness of validators.
 
-### Importance
-Allows for the testing of Origin in a controlled environment, enabling the detection and addressing of issues before they affect the end-user.
+**Subtasks**
+- DAG/causality validators
+- Invariant proofs or proof sketches
+- Consistency checks for operator definitions
 
-### In Origin
-Simulations are a key part of Origin's development and testing processes.
+**Outputs**
+- Verified validator logic and tests
+- Proof notes (concise and auditable)
+- Clear failure criteria
 
-## Code Quality
+**Done when**
+- Validators have unit tests and known counterexamples
+- Claims are stated with assumptions and limits
 
-### Definition
-A measure of code's readability, maintainability, and efficiency.
+## 5) Code Implementation
+**Intent:** Build production-grade modules and tooling.
 
-### Importance
-High-quality code is easier to work with and less prone to bugs, leading to a more stable and reliable system.
+**Subtasks**
+- Feature implementation
+- Refactors with behavior preservation
+- Performance improvements
+- API client integration (OpenAI/Anthropic/Gemini)
 
-### In Origin
-Code quality is paramount in Origin, with strict coding standards in place and regular code reviews conducted to ensure these standards are met.
+**Outputs**
+- Code with tests
+- Documentation updates
+- Backward compatibility notes (if applicable)
 
-## Continuous Integration (CI)
+**Done when**
+- Code is linted/formatted (where configured)
+- Tests pass or failures are explained with next actions
+- No secrets or credentials are committed
 
-### Definition
-A development practice in which developers integrate code into a shared repository frequently, ideally several times a day.
+## 6) Code Quality and Standards
+**Intent:** Keep the repo maintainable and predictable.
 
-### Importance
-Helps to catch bugs early and reduces the time it takes to deliver updates.
+**Subtasks**
+- Linting, formatting
+- Type checks
+- Dependency pinning and upgrades
+- Security scanning
 
-### In Origin
-Origin uses CI to ensure that new code integrates smoothly with the existing codebase and functions as expected.
+**Outputs**
+- Config updates (ruff/black/mypy/eslint/prettier/etc.)
+- CI updates
+- Dependency lock changes
 
-## Security
+**Done when**
+- Tooling runs locally and in CI
+- Dependency changes are justified and minimal-risk
 
-### Definition
-The protection of the system and its data from harm, damage, or unauthorized access.
+## 7) CI/CD and Release Engineering
+**Intent:** Make builds reproducible and deployments safe.
 
-### Importance
-Ensures the integrity and confidentiality of Origin's data and safeguards the system against attacks.
+**Subtasks**
+- GitHub Actions pipelines
+- Test matrices
+- Versioning and changelogs
+- Release packaging
 
-### In Origin
-Security in Origin is a top priority, with robust security measures in place to protect the system and its data.
+**Outputs**
+- CI workflows
+- Release notes
+- Build artifacts (when configured)
 
-## Documentation
+**Done when**
+- CI runs on PRs and main
+- Failures produce actionable logs
+- Releases are versioned and reproducible
 
-### Definition
-Written records that provide information about how to use or maintain a system.
+## 8) Security, Privacy, and Secrets Handling
+**Intent:** Prevent key leakage, unsafe automation, and insecure defaults.
 
-### Importance
-Helps users and developers understand and effectively use the system.
+**Subtasks**
+- Secret scanning rules
+- .env + .gitignore enforcement
+- Access control and least privilege
+- Threat modeling for orchestrator actions
 
-### In Origin
-Comprehensive, easy-to-understand documentation is available for all aspects of Origin.
+**Outputs**
+- Security policy docs
+- Repo guardrails (pre-commit hooks optional)
+- Hardening changes
 
-## Repo Ops
+**Done when**
+- Secrets are confirmed absent from git history
+- Clear instructions exist for key storage and rotation
 
-### Definition
-Operations related to the management and maintenance of the system's repository.
+## 9) Documentation and Knowledge Management
+**Intent:** Keep docs aligned with reality.
 
-### Importance
-Ensures the smooth operation of the system and facilitates collaboration among developers.
+**Subtasks**
+- README updates
+- Module docs and runbooks
+- Dataset documentation
+- Decision logs
 
-### In Origin
-Repo ops in Origin are handled efficiently and transparently, with clear procedures in place for tasks such as version control, branching, and merging.
+**Outputs**
+- Updated markdown docs
+- Runbooks for setup and operation
+
+**Done when**
+- A new contributor can run the system from scratch
+- Docs match actual commands and configuration
+
+## 10) Repository Operations
+**Intent:** Keep changes reviewable and auditable.
+
+**Subtasks**
+- Branching strategy
+- PR assembly
+- Commit messages
+- File organization and naming
+
+**Outputs**
+- Clean diffs, small commits, clear PR descriptions
+
+**Done when**
+- Work is isolated to a branch
+- Commits explain intent
+- PR is ready for review and merge
