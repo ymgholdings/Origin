@@ -1,3 +1,9 @@
 
 # Local virtualenv
 .venv/
+
+# Local dev
+.venv/
+.env
+.env.*
+conductor/runs/
