@@ -1,5 +1,6 @@
 import { ulid } from "ulid";
 import { TasksRepo, TaskRecord } from "../persistence/repo/tasksRepo";
+import { EventsRepo } from "../persistence/repo/eventsRepo";
 
 export interface FanoutWorkerOptions {
   db: any;
@@ -13,6 +14,12 @@ export interface FanoutWorkerOptions {
 export function runFanoutOnce(options: FanoutWorkerOptions): void {
   const { db, runId } = options;
   const tasksRepo = new TasksRepo(db);
+  const eventsRepo = new EventsRepo(db);
+
+  // Emit worker start event
+  if (runId) {
+    eventsRepo.emit(runId, "worker.fanout.started");
+  }
 
   // Get all tasks for the run (or all tasks if no runId specified)
   const tasks = runId ? tasksRepo.listByRun(runId) : getAllTasks(tasksRepo, db);
@@ -27,6 +34,8 @@ export function runFanoutOnce(options: FanoutWorkerOptions): void {
       task.input.fanout > 0
   );
 
+  let totalCreated = 0;
+
   for (const parent of parentTasks) {
     const targetChildCount = parent.input.fanout;
 
@@ -40,11 +49,38 @@ export function runFanoutOnce(options: FanoutWorkerOptions): void {
 
     if (childrenToCreate <= 0) {
       // Already have enough children
+      eventsRepo.emit(
+        parent.run_id,
+        "worker.fanout.skipped",
+        {
+          parentTaskId: parent.id,
+          parentTaskName: parent.name,
+          reason: "Children already exist",
+          existingCount: existingChildren.length,
+        },
+        parent.id
+      );
       continue;
     }
 
+    // Emit fan-out detected event
+    eventsRepo.emit(
+      parent.run_id,
+      "worker.fanout.detected",
+      {
+        parentTaskId: parent.id,
+        parentTaskName: parent.name,
+        targetCount: targetChildCount,
+        existingCount: existingChildren.length,
+        toCreate: childrenToCreate,
+      },
+      parent.id
+    );
+
     // Create the missing children
     const startIndex = existingChildren.length;
+    const createdChildren: string[] = [];
+
     for (let i = 0; i < childrenToCreate; i++) {
       const childIndex = startIndex + i + 1; // 1-indexed
       const childTask: TaskRecord = {
@@ -59,7 +95,43 @@ export function runFanoutOnce(options: FanoutWorkerOptions): void {
       };
 
       tasksRepo.insert(childTask);
+      createdChildren.push(childTask.id);
+
+      // Emit task created event
+      eventsRepo.emit(
+        parent.run_id,
+        "task.created",
+        {
+          taskId: childTask.id,
+          taskName: childTask.name,
+          parentTaskId: parent.id,
+        },
+        childTask.id
+      );
     }
+
+    totalCreated += childrenToCreate;
+
+    // Emit fan-out completed event for this parent
+    eventsRepo.emit(
+      parent.run_id,
+      "worker.fanout.completed",
+      {
+        parentTaskId: parent.id,
+        parentTaskName: parent.name,
+        childrenCreated: childrenToCreate,
+        childIds: createdChildren,
+      },
+      parent.id
+    );
+  }
+
+  // Emit worker finished event
+  if (runId) {
+    eventsRepo.emit(runId, "worker.fanout.finished", {
+      parentsProcessed: parentTasks.length,
+      totalChildrenCreated: totalCreated,
+    });
   }
 }
 

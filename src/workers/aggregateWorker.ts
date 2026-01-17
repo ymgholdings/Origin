@@ -1,5 +1,6 @@
 import { TasksRepo } from "../persistence/repo/tasksRepo";
 import { RunsRepo } from "../persistence/repo/runsRepo";
+import { EventsRepo } from "../persistence/repo/eventsRepo";
 
 export interface AggregateWorkerOptions {
   db: any;
@@ -19,6 +20,12 @@ export function runAggregateOnce(options: AggregateWorkerOptions): void {
   const { db, runId } = options;
   const tasksRepo = new TasksRepo(db);
   const runsRepo = new RunsRepo(db);
+  const eventsRepo = new EventsRepo(db);
+
+  // Emit worker start event
+  if (runId) {
+    eventsRepo.emit(runId, "worker.aggregate.started");
+  }
 
   // Get all tasks for the run (or all tasks if no runId specified)
   const tasks = runId ? tasksRepo.listByRun(runId) : getAllTasks(tasksRepo, db);
@@ -34,6 +41,8 @@ export function runAggregateOnce(options: AggregateWorkerOptions): void {
   }
 
   // Check each parent task to see if all its children are in terminal states
+  let parentsAggregated = 0;
+
   for (const [parentId, children] of tasksByParent) {
     const parent = tasks.find((t) => t.id === parentId);
     if (!parent || isTerminalState(parent.state)) {
@@ -52,14 +61,48 @@ export function runAggregateOnce(options: AggregateWorkerOptions): void {
         tasksRepo.updateStatus(parentId, "FAILED", {
           reason: "One or more child tasks failed",
         });
+
+        // Emit aggregation event
+        eventsRepo.emit(
+          parent.run_id,
+          "task.aggregated",
+          {
+            taskId: parentId,
+            taskName: parent.name,
+            newState: "FAILED",
+            reason: "One or more child tasks failed",
+            childrenCount: children.length,
+            failedCount: children.filter((c) => c.state === "FAILED").length,
+          },
+          parentId
+        );
+
+        parentsAggregated++;
       } else if (allChildrenSucceeded) {
         // If all children succeeded, parent succeeds
         tasksRepo.updateStatus(parentId, "SUCCEEDED");
+
+        // Emit aggregation event
+        eventsRepo.emit(
+          parent.run_id,
+          "task.aggregated",
+          {
+            taskId: parentId,
+            taskName: parent.name,
+            newState: "SUCCEEDED",
+            childrenCount: children.length,
+          },
+          parentId
+        );
+
+        parentsAggregated++;
       }
     }
   }
 
   // If we're processing a specific run, check if all tasks are in terminal states
+  let runAggregated = false;
+
   if (runId) {
     // Refresh tasks after updates
     const updatedTasks = tasksRepo.listByRun(runId);
@@ -74,12 +117,37 @@ export function runAggregateOnce(options: AggregateWorkerOptions): void {
         if (anyTaskFailed) {
           // If any task failed, run fails
           updateRunStatus(db, runId, "FAILED");
+
+          // Emit run aggregation event
+          eventsRepo.emit(runId, "run.aggregated", {
+            runId,
+            newState: "FAILED",
+            tasksCount: updatedTasks.length,
+            failedCount: updatedTasks.filter((t) => t.state === "FAILED").length,
+          });
+
+          runAggregated = true;
         } else if (allTasksSucceeded) {
           // If all tasks succeeded, run succeeds
           updateRunStatus(db, runId, "SUCCEEDED");
+
+          // Emit run aggregation event
+          eventsRepo.emit(runId, "run.aggregated", {
+            runId,
+            newState: "SUCCEEDED",
+            tasksCount: updatedTasks.length,
+          });
+
+          runAggregated = true;
         }
       }
     }
+
+    // Emit worker finished event
+    eventsRepo.emit(runId, "worker.aggregate.finished", {
+      parentsAggregated,
+      runAggregated,
+    });
   }
 }
 
