@@ -8,6 +8,9 @@ export interface TaskRecord {
   updated_at: string;
   input?: any;
   output?: any;
+  retry_count?: number;
+  max_retries?: number;
+  last_error?: string | null;
 }
 
 export class TasksRepo {
@@ -16,8 +19,9 @@ export class TasksRepo {
   insert(task: TaskRecord) {
     const stmt = this.db.prepare(`
       INSERT INTO tasks (
-        id, run_id, parent_task_id, name, state, created_at, updated_at, input, output
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        id, run_id, parent_task_id, name, state, created_at, updated_at, input, output,
+        retry_count, max_retries, last_error
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const params = [
@@ -29,7 +33,10 @@ export class TasksRepo {
       task.created_at,
       task.updated_at,
       task.input ? JSON.stringify(task.input) : null,
-      task.output ? JSON.stringify(task.output ?? {}) : null
+      task.output ? JSON.stringify(task.output ?? {}) : null,
+      task.retry_count ?? 0,
+      task.max_retries ?? 3,
+      task.last_error ?? null
     ];
 
     // Handle both better-sqlite3 and sql.js APIs
@@ -45,10 +52,10 @@ export class TasksRepo {
     }
   }
 
-  updateStatus(id: string, state: string, output?: any) {
+  updateStatus(id: string, state: string, output?: any, lastError?: string) {
     const stmt = this.db.prepare(`
       UPDATE tasks
-      SET state = ?, updated_at = ?, output = ?
+      SET state = ?, updated_at = ?, output = ?, last_error = ?
       WHERE id = ?
     `);
 
@@ -56,11 +63,32 @@ export class TasksRepo {
       state,
       new Date().toISOString(),
       output ? JSON.stringify(output) : null,
+      lastError ?? null,
       id
     ];
 
     // Handle both better-sqlite3 and sql.js APIs
     // sql.js has bind/step/free, better-sqlite3 has run
+    if (typeof stmt.bind === 'function') {
+      // sql.js
+      stmt.bind(params);
+      stmt.step();
+      stmt.free();
+    } else {
+      // better-sqlite3
+      stmt.run(params);
+    }
+  }
+
+  incrementRetryCount(id: string) {
+    const stmt = this.db.prepare(`
+      UPDATE tasks
+      SET retry_count = retry_count + 1, updated_at = ?
+      WHERE id = ?
+    `);
+
+    const params = [new Date().toISOString(), id];
+
     if (typeof stmt.bind === 'function') {
       // sql.js
       stmt.bind(params);
