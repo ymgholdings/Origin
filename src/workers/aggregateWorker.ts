@@ -8,8 +8,12 @@ export interface AggregateWorkerOptions {
 
 /**
  * Aggregates child task states to parent tasks and run states.
- * - When all children of a parent task are SUCCEEDED, the parent becomes SUCCEEDED.
- * - When all tasks for a run are SUCCEEDED, the run becomes SUCCEEDED.
+ * - When all children are in terminal states (SUCCEEDED/FAILED/CANCELLED):
+ *   - If any child is FAILED, the parent becomes FAILED
+ *   - If all children are SUCCEEDED, the parent becomes SUCCEEDED
+ * - When all tasks for a run are in terminal states:
+ *   - If any task is FAILED, the run becomes FAILED
+ *   - If all tasks are SUCCEEDED, the run becomes SUCCEEDED
  */
 export function runAggregateOnce(options: AggregateWorkerOptions): void {
   const { db, runId } = options;
@@ -29,32 +33,61 @@ export function runAggregateOnce(options: AggregateWorkerOptions): void {
     }
   }
 
-  // Check each parent task to see if all its children are SUCCEEDED
+  // Check each parent task to see if all its children are in terminal states
   for (const [parentId, children] of tasksByParent) {
-    const allChildrenSucceeded = children.every((child) => child.state === "SUCCEEDED");
+    const parent = tasks.find((t) => t.id === parentId);
+    if (!parent || isTerminalState(parent.state)) {
+      // Skip if parent already in terminal state
+      continue;
+    }
 
-    if (allChildrenSucceeded && children.length > 0) {
-      // Update the parent task to SUCCEEDED
-      const parent = tasks.find((t) => t.id === parentId);
-      if (parent && parent.state !== "SUCCEEDED") {
+    const allChildrenTerminal = children.every((child) => isTerminalState(child.state));
+
+    if (allChildrenTerminal && children.length > 0) {
+      const anyChildFailed = children.some((child) => child.state === "FAILED");
+      const allChildrenSucceeded = children.every((child) => child.state === "SUCCEEDED");
+
+      if (anyChildFailed) {
+        // If any child failed, parent fails
+        tasksRepo.updateStatus(parentId, "FAILED", {
+          reason: "One or more child tasks failed",
+        });
+      } else if (allChildrenSucceeded) {
+        // If all children succeeded, parent succeeds
         tasksRepo.updateStatus(parentId, "SUCCEEDED");
       }
     }
   }
 
-  // If we're processing a specific run, check if all tasks are SUCCEEDED
+  // If we're processing a specific run, check if all tasks are in terminal states
   if (runId) {
     // Refresh tasks after updates
     const updatedTasks = tasksRepo.listByRun(runId);
-    const allTasksSucceeded = updatedTasks.every((task) => task.state === "SUCCEEDED");
+    const allTasksTerminal = updatedTasks.every((task) => isTerminalState(task.state));
 
-    if (allTasksSucceeded && updatedTasks.length > 0) {
+    if (allTasksTerminal && updatedTasks.length > 0) {
       const run = runsRepo.get(runId);
-      if (run && run.state !== "SUCCEEDED") {
-        updateRunStatus(db, runId, "SUCCEEDED");
+      if (run && !isTerminalState(run.state)) {
+        const anyTaskFailed = updatedTasks.some((task) => task.state === "FAILED");
+        const allTasksSucceeded = updatedTasks.every((task) => task.state === "SUCCEEDED");
+
+        if (anyTaskFailed) {
+          // If any task failed, run fails
+          updateRunStatus(db, runId, "FAILED");
+        } else if (allTasksSucceeded) {
+          // If all tasks succeeded, run succeeds
+          updateRunStatus(db, runId, "SUCCEEDED");
+        }
       }
     }
   }
+}
+
+/**
+ * Check if a state is terminal (cannot transition further)
+ */
+function isTerminalState(state: string): boolean {
+  return state === "SUCCEEDED" || state === "FAILED" || state === "CANCELLED";
 }
 
 /**
