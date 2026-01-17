@@ -1,0 +1,28 @@
+{
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^25.0.9",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.17"
+  },
+  "scripts": {
+    "fanout-worker": "node dist/bootstrap/start.js",
+    "aggregate-worker": "node dist/bootstrap/start.js",
+    "build": "tsc",
+    "start:fanout": "ORIGIN_ROLE=fanout-worker node dist/bootstrap/start.js",
+    "start:aggregate": "ORIGIN_ROLE=aggregate-worker node dist/bootstrap/start.js"
+  },
+  "dependencies": {
+    "sql.js": "^1.13.0",
+    "sqlite3": "^5.1.7",
+    "ulid": "^3.0.2",
+    "zod": "^4.3.5"
+  },
+  "packageManager": "pnpm@10.28.0+sha512.05df71d1421f21399e053fde567cea34d446fa02c76571441bfc1c7956e98e363088982d940465fd34480d4d90a0668bc12362f8aa88000a64e83d0b0e47be48",
+  "pnpm": {
+    "overrides": {
+      "esbuild": "0.26.0",
+      "@esbuild/darwin-x64": "0.26.0"
+    }
+  }
+}
