@@ -6,4 +6,16 @@
 .venv/
 .env
 .env.*
-conductor/runs/
+conductor/
+
+# Node
+node_modules/
+package-lock.json
+dist/
+
+# Build and runtime artifacts
+data/
+tasks.json
+
+# Temporary files
+PR_DETAILS.md
