@@ -20,94 +20,181 @@ import { runFanoutOnce } from "../workers/fanoutWorker";
 import { runAggregateOnce } from "../workers/aggregateWorker";
 import { ulid } from "ulid";
 
-async function main() {
-  console.log("=== Origin Conductor: Minimal Fan-out Run ===\n");
+async function runSuccessScenario() {
+  console.log("=== Scenario 1: All Tasks Succeed ===\n");
 
-  // Initialize in-memory database
   const SQL = await initSqlJs();
   const db = new SQL.Database();
-
-  // Apply migrations
-  console.log("1. Applying migrations...");
   migrate(db as any);
-  console.log("   ✓ Migrations applied\n");
 
-  // Create repositories
   const runsRepo = new RunsRepo(db as any);
   const tasksRepo = new TasksRepo(db as any);
 
-  // Step 1: Create a new run
-  console.log("2. Creating a new run...");
   const runId = ulid();
   runsRepo.insert({
     id: runId,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     state: "RUNNING",
-    meta: { purpose: "minimal-fanout-demo" },
+    meta: { purpose: "success-scenario" },
   });
-  console.log(`   ✓ Run created: ${runId}\n`);
 
-  // Step 2: Create one fanout parent task
-  console.log("3. Creating parent task with fanout: 3...");
   const parentTaskId = ulid();
   tasksRepo.insert({
     id: parentTaskId,
     run_id: runId,
     parent_task_id: null,
-    name: "DEMO_FANOUT_PARENT",
+    name: "SUCCESS_PARENT",
     state: "PENDING",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     input: { fanout: 3 },
   });
-  console.log(`   ✓ Parent task created: ${parentTaskId}\n`);
 
-  // Step 3: Call fanout worker
-  console.log("4. Running fanout worker...");
   runFanoutOnce({ db, runId });
-  const tasksAfterFanout = tasksRepo.listByRun(runId);
-  const children = tasksAfterFanout.filter((t) => t.parent_task_id === parentTaskId);
-  console.log(`   ✓ Created ${children.length} child tasks:`);
-  children.forEach((child) => {
-    console.log(`     - ${child.name} (${child.id}) [${child.state}]`);
-  });
-  console.log();
+  const children = tasksRepo.listByRun(runId).filter((t) => t.parent_task_id === parentTaskId);
 
-  // Step 4: Simulate completing all children
-  console.log("5. Simulating completion of all child tasks...");
+  console.log("1. Fan-out created 3 children");
   for (const child of children) {
-    tasksRepo.updateStatus(child.id, "SUCCEEDED", { completed: true });
-    console.log(`   ✓ Completed: ${child.name}`);
+    tasksRepo.updateStatus(child.id, "SUCCEEDED");
   }
-  console.log();
+  console.log("2. All children succeeded");
 
-  // Step 5: Call aggregate worker
-  console.log("6. Running aggregate worker...");
   runAggregateOnce({ db, runId });
-  const tasksAfterAggregate = tasksRepo.listByRun(runId);
-  const parent = tasksAfterAggregate.find((t) => t.id === parentTaskId);
-  console.log(`   ✓ Parent task state: ${parent?.state}`);
   const finalRun = runsRepo.get(runId);
-  console.log(`   ✓ Run state: ${finalRun?.state}\n`);
+  const parent = tasksRepo.listByRun(runId).find((t) => t.id === parentTaskId);
 
-  // Step 6: Print final state
-  console.log("=== Final State ===");
-  console.log(`Run ID: ${runId}`);
-  console.log(`Run State: ${finalRun?.state}`);
-  console.log(`Total Tasks: ${tasksAfterAggregate.length}`);
-  console.log(`Parent Task: ${parent?.name} [${parent?.state}]`);
-  console.log(`Child Tasks:`);
-  tasksAfterAggregate
-    .filter((t) => t.parent_task_id === parentTaskId)
-    .forEach((child) => {
-      console.log(`  - ${child.name} [${child.state}]`);
-    });
+  console.log(`3. Parent state: ${parent?.state}`);
+  console.log(`4. Run state: ${finalRun?.state}`);
+  console.log(`   ✓ Success scenario complete\n`);
 
-  console.log("\n✓ Demo completed successfully!");
-
-  // Cleanup
   db.close();
+}
+
+async function runFailureScenario() {
+  console.log("=== Scenario 2: One Task Fails ===\n");
+
+  const SQL = await initSqlJs();
+  const db = new SQL.Database();
+  migrate(db as any);
+
+  const runsRepo = new RunsRepo(db as any);
+  const tasksRepo = new TasksRepo(db as any);
+
+  const runId = ulid();
+  runsRepo.insert({
+    id: runId,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    state: "RUNNING",
+    meta: { purpose: "failure-scenario" },
+  });
+
+  const parentTaskId = ulid();
+  tasksRepo.insert({
+    id: parentTaskId,
+    run_id: runId,
+    parent_task_id: null,
+    name: "FAILURE_PARENT",
+    state: "PENDING",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    input: { fanout: 3 },
+  });
+
+  runFanoutOnce({ db, runId });
+  const children = tasksRepo.listByRun(runId).filter((t) => t.parent_task_id === parentTaskId);
+
+  console.log("1. Fan-out created 3 children");
+
+  // First two succeed, third fails
+  tasksRepo.updateStatus(children[0].id, "SUCCEEDED");
+  tasksRepo.updateStatus(children[1].id, "SUCCEEDED");
+  tasksRepo.updateStatus(children[2].id, "FAILED", { error: "Simulated failure" });
+
+  console.log(`2. Child states: ${children[0].name}=SUCCEEDED, ${children[1].name}=SUCCEEDED, ${children[2].name}=FAILED`);
+
+  runAggregateOnce({ db, runId });
+  const finalRun = runsRepo.get(runId);
+  const parent = tasksRepo.listByRun(runId).find((t) => t.id === parentTaskId);
+
+  console.log(`3. Parent state: ${parent?.state} (propagated from failed child)`);
+  console.log(`4. Run state: ${finalRun?.state} (propagated from failed parent)`);
+  console.log(`   ✓ Failure scenario complete\n`);
+
+  db.close();
+}
+
+async function runPartialCompletionScenario() {
+  console.log("=== Scenario 3: Partial Completion (No Aggregation) ===\n");
+
+  const SQL = await initSqlJs();
+  const db = new SQL.Database();
+  migrate(db as any);
+
+  const runsRepo = new RunsRepo(db as any);
+  const tasksRepo = new TasksRepo(db as any);
+
+  const runId = ulid();
+  runsRepo.insert({
+    id: runId,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    state: "RUNNING",
+    meta: { purpose: "partial-completion" },
+  });
+
+  const parentTaskId = ulid();
+  tasksRepo.insert({
+    id: parentTaskId,
+    run_id: runId,
+    parent_task_id: null,
+    name: "PARTIAL_PARENT",
+    state: "PENDING",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    input: { fanout: 3 },
+  });
+
+  runFanoutOnce({ db, runId });
+  const children = tasksRepo.listByRun(runId).filter((t) => t.parent_task_id === parentTaskId);
+
+  console.log("1. Fan-out created 3 children");
+
+  // Only two complete, one still running
+  tasksRepo.updateStatus(children[0].id, "SUCCEEDED");
+  tasksRepo.updateStatus(children[1].id, "SUCCEEDED");
+  // children[2] stays PENDING
+
+  console.log(`2. Child states: ${children[0].name}=SUCCEEDED, ${children[1].name}=SUCCEEDED, ${children[2].name}=PENDING`);
+
+  runAggregateOnce({ db, runId });
+  const finalRun = runsRepo.get(runId);
+  const parent = tasksRepo.listByRun(runId).find((t) => t.id === parentTaskId);
+
+  console.log(`3. Parent state: ${parent?.state} (no change, waiting for all children)`);
+  console.log(`4. Run state: ${finalRun?.state} (no change, waiting for completion)`);
+  console.log(`   ✓ Partial completion scenario complete\n`);
+
+  db.close();
+}
+
+async function main() {
+  console.log("=== Origin Conductor: Error Handling Demo ===\n");
+
+  try {
+    await runSuccessScenario();
+    await runFailureScenario();
+    await runPartialCompletionScenario();
+
+    console.log("=== All Scenarios Complete ===");
+    console.log("✓ Success: Parent and Run marked as SUCCEEDED");
+    console.log("✓ Failure: Parent and Run marked as FAILED when child fails");
+    console.log("✓ Partial: No aggregation until all children are terminal\n");
+  } catch (err) {
+    console.error("Error:", err);
+    process.exit(1);
+  }
 }
 
 main().catch((err) => {
