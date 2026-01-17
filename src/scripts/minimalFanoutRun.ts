@@ -20,6 +20,7 @@ import { runFanoutOnce } from "../workers/fanoutWorker";
 import { runAggregateOnce } from "../workers/aggregateWorker";
 import { ulid } from "ulid";
 import { runRetryOnce } from "../workers/retryWorker";
+import { Monitor } from "../monitoring/monitor";
 
 async function runSuccessScenario() {
   console.log("=== Scenario 1: All Tasks Succeed ===\n");
@@ -318,8 +319,123 @@ async function runExhaustedRetryScenario() {
   db.close();
 }
 
+async function runMonitoringScenario() {
+  console.log("=== Scenario 6: Monitoring & Health Reports ===\n");
+
+  const SQL = await initSqlJs();
+  const db = new SQL.Database();
+  migrate(db as any);
+
+  const runsRepo = new RunsRepo(db as any);
+  const tasksRepo = new TasksRepo(db as any);
+  const monitor = new Monitor({ db: db as any });
+
+  const runId = ulid();
+  runsRepo.insert({
+    id: runId,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    state: "RUNNING",
+    meta: { purpose: "monitoring-demo" },
+  });
+
+  const parentTaskId = ulid();
+  tasksRepo.insert({
+    id: parentTaskId,
+    run_id: runId,
+    parent_task_id: null,
+    name: "MONITOR_PARENT",
+    state: "PENDING",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    input: { fanout: 5 },
+  });
+
+  console.log("1. Running fan-out worker...");
+  runFanoutOnce({ db, runId });
+
+  const children = tasksRepo.listByRun(runId).filter((t) => t.parent_task_id === parentTaskId);
+  console.log(`   Created ${children.length} child tasks`);
+
+  // Simulate different outcomes
+  console.log("2. Simulating task execution...");
+  tasksRepo.updateStatus(children[0].id, "SUCCEEDED");
+  tasksRepo.updateStatus(children[1].id, "SUCCEEDED");
+  tasksRepo.updateStatus(children[2].id, "FAILED", null, "Connection timeout");
+  tasksRepo.updateStatus(children[3].id, "SUCCEEDED");
+  // Leave children[4] as PENDING
+
+  console.log("   - 3 tasks SUCCEEDED");
+  console.log("   - 1 task FAILED");
+  console.log("   - 1 task still PENDING\n");
+
+  // Generate health report
+  console.log("3. Health Report:");
+  const healthReport = monitor.getHealthReport(runId);
+  console.log(`   Status: ${healthReport.status}`);
+  console.log(`   Total Tasks: ${healthReport.summary.totalTasks}`);
+  console.log(`   Succeeded: ${healthReport.summary.succeededTasks}`);
+  console.log(`   Failed: ${healthReport.summary.failedTasks}`);
+  console.log(`   Pending: ${healthReport.summary.pendingTasks}`);
+  console.log(`   Success Rate: ${(healthReport.metrics.successRate * 100).toFixed(1)}%`);
+  console.log(`   Warnings: ${healthReport.warnings.length > 0 ? healthReport.warnings.join(", ") : "None"}\n`);
+
+  // Demonstrate retry with monitoring
+  console.log("4. Running retry worker...");
+  runRetryOnce({ db, runId });
+
+  // Get retry metrics
+  const retryMetrics = monitor.getRetryMetrics(runId);
+  console.log("   Retry Metrics:");
+  console.log(`   - Total Retries: ${retryMetrics.totalRetries}`);
+  console.log(`   - Exhausted Tasks: ${retryMetrics.exhaustedTasks}\n`);
+
+  // Complete the retried task
+  const retriedTask = tasksRepo.listByRun(runId).find((t) => t.name === children[2].name);
+  if (retriedTask) {
+    tasksRepo.updateStatus(retriedTask.id, "SUCCEEDED");
+    console.log("5. Retried task now SUCCEEDED\n");
+  }
+
+  // Complete the pending task
+  tasksRepo.updateStatus(children[4].id, "SUCCEEDED");
+  console.log("6. Remaining task completed\n");
+
+  // Run aggregation
+  console.log("7. Running aggregate worker...");
+  runAggregateOnce({ db, runId });
+
+  // Get final run summary
+  const runSummary = monitor.getRunSummary(runId);
+  console.log("8. Run Summary:");
+  console.log(`   State: ${runSummary.state}`);
+  console.log(`   Total Tasks: ${runSummary.totalTasks}`);
+  console.log(`   Task Breakdown:`);
+  console.log(`     - Succeeded: ${runSummary.taskBreakdown.succeeded}`);
+  console.log(`     - Failed: ${runSummary.taskBreakdown.failed}`);
+  console.log(`     - Pending: ${runSummary.taskBreakdown.pending}`);
+  console.log(`   Worker Executions:`);
+  console.log(`     - Fanout: ${runSummary.workerExecutions.fanout}`);
+  console.log(`     - Aggregate: ${runSummary.workerExecutions.aggregate}`);
+  console.log(`     - Retry: ${runSummary.workerExecutions.retry}`);
+  console.log(`   Total Events: ${runSummary.eventCount}\n`);
+
+  // Show sample events
+  const events = monitor.getEvents(runId);
+  console.log("9. Event Log (sample):");
+  const sampleEvents = events.slice(0, 5);
+  for (const event of sampleEvents) {
+    console.log(`   - ${event.name} at ${event.at}`);
+  }
+  console.log(`   ... and ${events.length - 5} more events\n`);
+
+  console.log("   ✓ Monitoring scenario complete\n");
+
+  db.close();
+}
+
 async function main() {
-  console.log("=== Origin Conductor: Error Handling & Retry Demo ===\n");
+  console.log("=== Origin Conductor: Monitoring & Orchestration Demo ===\n");
 
   try {
     await runSuccessScenario();
@@ -327,13 +443,15 @@ async function main() {
     await runPartialCompletionScenario();
     await runRetryScenario();
     await runExhaustedRetryScenario();
+    await runMonitoringScenario();
 
     console.log("=== All Scenarios Complete ===");
     console.log("✓ Success: Parent and Run marked as SUCCEEDED");
     console.log("✓ Failure: Parent and Run marked as FAILED when child fails");
     console.log("✓ Partial: No aggregation until all children are terminal");
     console.log("✓ Retry: Failed tasks automatically retry up to max_retries");
-    console.log("✓ Exhausted: Permanently FAILED after exhausting retries\n");
+    console.log("✓ Exhausted: Permanently FAILED after exhausting retries");
+    console.log("✓ Monitoring: Health reports, metrics, and event tracking\n");
   } catch (err) {
     console.error("Error:", err);
     process.exit(1);

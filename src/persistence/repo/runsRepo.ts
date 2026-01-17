@@ -1,4 +1,4 @@
-export type RunState = "PENDING" | "RUNNING" | "SUCCEEDED" | "FAILED";
+export type RunState = "PENDING" | "RUNNING" | "SUCCEEDED" | "FAILED" | "CANCELLED";
 
 export interface RunRecord {
   id: string;
