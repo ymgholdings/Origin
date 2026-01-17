@@ -1,19 +1,22 @@
 # Origin Conductor
 
-> Resilient task orchestration with fan-out, aggregation, and automatic retry logic
+> Resilient task orchestration with fan-out, aggregation, automatic retry logic, and comprehensive monitoring
 
 ## Overview
 
-Origin Conductor is a TypeScript-based task orchestration system with SQLite persistence. It provides idempotent workers for fan-out task creation, state aggregation with error handling, and automatic retry logic for failed tasks.
+Origin Conductor is a TypeScript-based task orchestration system with SQLite persistence. It provides idempotent workers for fan-out task creation, state aggregation with error handling, automatic retry logic for failed tasks, and comprehensive monitoring with event tracking and health reports.
 
 ## Features
 
 - 🔄 **Fan-out Worker**: Create N parallel child tasks from a parent task
 - 📊 **Aggregate Worker**: Propagate success/failure states from children to parents
 - 🔁 **Retry Worker**: Automatically retry failed tasks with configurable limits
+- 📈 **Monitoring & Observability**: Health reports, metrics, and event tracking
+- 📝 **Event Tracking**: Complete audit trail with 16+ event types
+- 🚨 **Alerting**: Stuck task detection with configurable thresholds
 - 💾 **SQLite Persistence**: Dual-API support for better-sqlite3 and sql.js
 - ✅ **Type-Safe**: Full TypeScript with Zod validation
-- 🧪 **Well-Tested**: 31 passing tests across 7 test suites
+- 🧪 **Well-Tested**: 48 passing tests across 9 test suites
 
 ## Quick Start
 
@@ -101,6 +104,44 @@ const retriedCount = runRetryOnce({ db, runId });
 - Tracks retry count and last error
 - Automatic retry for transient failures
 - Permanent failure after exhausting retries
+
+#### Monitoring & Observability
+Monitor system health, track metrics, and query events:
+
+```typescript
+import { Monitor } from './monitoring/monitor';
+
+const monitor = new Monitor({ db });
+
+// Generate health report
+const report = monitor.getHealthReport(runId);
+console.log(`Status: ${report.status}`); // HEALTHY, WARNING, or CRITICAL
+console.log(`Success Rate: ${(report.metrics.successRate * 100).toFixed(1)}%`);
+console.log(`Stuck Tasks: ${report.stuckTasks.length}`);
+
+// Get retry metrics
+const metrics = monitor.getRetryMetrics(runId);
+console.log(`Total Retries: ${metrics.totalRetries}`);
+console.log(`Success Rate: ${(metrics.retrySuccessRate * 100).toFixed(1)}%`);
+
+// Query events
+const events = monitor.getEvents(runId, 'task.retried');
+
+// Alert on stuck tasks
+const stuckTasks = monitor.alertStuckTasks(runId, 300000); // 5 min threshold
+```
+
+**Key Features:**
+- **Health Reports**: Real-time status with HEALTHY/WARNING/CRITICAL indicators
+- **Metrics**: Success rates, failure rates, retry statistics
+- **Stuck Task Detection**: Configurable thresholds with alerting
+- **Event Tracking**: 16+ event types for complete audit trail
+- **Run Summaries**: Duration, task breakdown, worker execution counts
+
+**Event Types:**
+- Worker lifecycle: `worker.{fanout|aggregate|retry}.{started|finished}`
+- Task events: `task.{created|aggregated|retried|retries_exhausted}`
+- Run events: `run.aggregated`
 
 ### State Machine
 
@@ -261,10 +302,12 @@ pnpm vitest run --coverage
 
 ### Test Coverage
 
-- **31 tests** across 7 test suites
+- **48 tests** across 9 test suites
 - Fan-out worker: 1 test (idempotency)
 - Aggregate worker: 7 tests (success, failure, partial completion)
 - Retry worker: 5 tests (retry logic, exhausted retries)
+- **Monitoring: 11 tests (health reports, metrics, alerting)**
+- **EventsRepo: 6 tests (persistence, querying)**
 - Validation: 12 tests (ULID, timestamps, state transitions)
 - Repositories: 3 tests (basic CRUD operations)
 - IDs: 3 tests (ULID and ISO date validation)
@@ -283,6 +326,7 @@ npx ts-node src/scripts/minimalFanoutRun.ts
 3. ⏸️ Partial completion (no premature aggregation)
 4. 🔁 Automatic retry → success on second attempt
 5. 💀 Exhausted retries → permanent failure
+6. **📈 Monitoring & health reports → real-time observability**
 
 ## API Reference
 
@@ -342,6 +386,51 @@ Finds FAILED tasks with retries remaining and resets them to PENDING.
 - Resets task to PENDING for retry
 - Permanently FAILED after exhausting retries
 
+### Monitor
+
+```typescript
+class Monitor {
+  getHealthReport(runId: string, stuckThresholdMs?: number): HealthReport
+  getRetryMetrics(runId: string): RetryMetrics
+  getRunSummary(runId: string): RunSummary
+  getEvents(runId: string, eventName?: string): EventRecord[]
+  alertStuckTasks(runId: string, thresholdMs?: number): StuckTask[]
+}
+```
+
+Generate health reports, track metrics, and query events.
+
+**Methods:**
+
+- `getHealthReport()`: Comprehensive health report with status, metrics, and warnings
+- `getRetryMetrics()`: Retry statistics (success rate, exhausted tasks)
+- `getRunSummary()`: Run overview (duration, task breakdown, worker executions)
+- `getEvents()`: Query events, optionally filtered by name
+- `alertStuckTasks()`: Detect tasks stuck beyond threshold (default: 5 minutes)
+
+**Health Report Status:**
+- `HEALTHY`: All tasks proceeding normally
+- `WARNING`: Stuck tasks detected or high failure rate
+- `CRITICAL`: Failed tasks or exhausted retries
+
+**Example:**
+
+```typescript
+const monitor = new Monitor({ db });
+
+// Get health report
+const report = monitor.getHealthReport(runId);
+if (report.status === 'CRITICAL') {
+  console.error(`Run ${runId} has ${report.summary.failedTasks} failed tasks`);
+}
+
+// Check for stuck tasks
+const stuckTasks = monitor.alertStuckTasks(runId, 300000);
+if (stuckTasks.length > 0) {
+  console.warn(`${stuckTasks.length} tasks haven't updated in 5 minutes`);
+}
+```
+
 ## Configuration
 
 ### Retry Configuration
@@ -382,14 +471,17 @@ src/
 ├── persistence/       # Database layer
 │   ├── migrate.ts     # Migration runner
 │   └── repo/
-│       ├── runsRepo.ts   # Runs repository
-│       └── tasksRepo.ts  # Tasks repository
+│       ├── runsRepo.ts    # Runs repository
+│       ├── tasksRepo.ts   # Tasks repository
+│       └── eventsRepo.ts  # Events repository
 ├── workers/           # Worker implementations
 │   ├── fanoutWorker.ts      # Fan-out worker
 │   ├── aggregateWorker.ts   # Aggregate worker
 │   └── retryWorker.ts       # Retry worker
+├── monitoring/        # Observability and monitoring
+│   └── monitor.ts     # Health reports, metrics, alerting
 ├── scripts/           # Demo and utility scripts
-│   └── minimalFanoutRun.ts  # E2E demo
+│   └── minimalFanoutRun.ts  # E2E demo (6 scenarios)
 └── test/
     └── utils/
         └── tempDb.ts  # Test database utility

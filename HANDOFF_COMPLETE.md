@@ -2,22 +2,25 @@
 
 ## Summary
 
-Successfully implemented Origin Conductor persistence + orchestration layer with:
+Successfully implemented Origin Conductor persistence + orchestration layer with comprehensive monitoring:
 - ✅ Fan-out worker with idempotency
 - ✅ Aggregate worker with error handling and state propagation
 - ✅ Retry worker with automatic failure recovery
-- ✅ Comprehensive test coverage (31 tests passing)
-- ✅ End-to-end demo with 5 scenarios
+- ✅ **Monitoring & observability with health reports and event tracking**
+- ✅ **Event-driven architecture with 16+ event types**
+- ✅ **Stuck task detection and alerting**
+- ✅ Comprehensive test coverage (48 tests passing)
+- ✅ End-to-end demo with 6 scenarios
 - ✅ Contract validation for IDs, timestamps, and state transitions
 - ✅ TypeScript compilation clean
 
 ## Test Results
 
 ```
-Test Files: 7 passed (7)
-Tests: 31 passed (31)
+Test Files: 9 passed (9)
+Tests: 48 passed (48)
 TypeScript: No errors
-All Scenarios: 5/5 passing
+All Scenarios: 6/6 passing
 ```
 
 ## Features Implemented
@@ -44,13 +47,35 @@ All Scenarios: 5/5 passing
 - Permanently FAILED after exhausting retries
 - Returns count of tasks retried
 
-### 4. SQLite Persistence
+### 4. Monitoring & Observability
+- **EventsRepo**: Persistent event storage with dual-API support
+- **Monitor Service**: Health reports, metrics, and alerting
+- **16+ Event Types**: Worker lifecycle, task state transitions, aggregation
+- **Health Reports**: Real-time status (HEALTHY, WARNING, CRITICAL)
+- **Metrics**: Success/failure rates, retry statistics, task breakdown
+- **Stuck Task Detection**: Configurable thresholds with alerting (default: 5 minutes)
+- **Retry Metrics**: Success rate, exhausted tasks, average attempts
+- **Run Summaries**: Duration, task breakdown, worker execution counts
+- **Event Querying**: Filter by run, task, or event name
+
+**Event Types Emitted:**
+- **Fan-out**: `worker.fanout.{started|detected|completed|skipped|finished}`, `task.created`
+- **Aggregate**: `worker.aggregate.{started|finished}`, `task.aggregated`, `run.aggregated`
+- **Retry**: `worker.retry.{started|finished}`, `task.retried`, `task.retries_exhausted`
+
+**Fulfills Charter Requirements:**
+- ✅ System Monitoring
+- ✅ System Health Reports
+- ✅ Error Logs (events table)
+- ✅ Audit Trail (complete event log)
+
+### 5. SQLite Persistence
 - Dual-API support for `better-sqlite3` and `sql.js`
 - `RunsRepo` and `TasksRepo` with insert/update/query methods
 - Runtime API detection for compatibility
 - Database migrations for runs, tasks, and events tables
 
-### 5. Validation & Contracts
+### 6. Validation & Contracts
 - ULID and ISO timestamp validation
 - Task and Run state machine definitions
 - Zod schemas for record validation
@@ -83,63 +108,99 @@ All Scenarios: 5/5 passing
    - Resets FAILED → PENDING for retry
    - Increments `retry_count` on each attempt
    - Respects `max_retries` limit
+   - Emits retry events and exhaustion events
    - 5 tests: retry logic, exhausted retries, multiple tasks, custom limits
 
+#### Monitoring & Observability
+4. **src/monitoring/monitor.ts** + **monitor.test.ts**
+   - `Monitor` class with health reports, metrics, and alerting
+   - Methods: getHealthReport(), getRetryMetrics(), getRunSummary(), getEvents(), alertStuckTasks()
+   - Health status indicators: HEALTHY, WARNING, CRITICAL
+   - Stuck task detection with configurable thresholds
+   - 11 tests: health reports, metrics, stuck task detection, event queries
+
+5. **src/persistence/repo/eventsRepo.ts** + **eventsRepo.test.ts**
+   - `EventsRepo` class with insert/emit/listByRun/listByTask/listByName
+   - Dual-API support (better-sqlite3 and sql.js)
+   - Automatic ULID and timestamp generation
+   - Event filtering and querying
+   - 6 tests: persistence, retrieval, filtering, ordering
+
 #### Persistence & Contracts
-4. **src/persistence/repo/runsRepo.ts** + **runsRepo.test.ts**
+6. **src/persistence/repo/runsRepo.ts** + **runsRepo.test.ts**
    - `RunsRepo` class with insert/get methods
    - Dual-API support (better-sqlite3 and sql.js)
    - 1 test: basic insert and retrieve
 
-5. **src/persistence/repo/tasksRepo.ts** + **tasksRepo.test.ts**
+7. **src/persistence/repo/tasksRepo.ts** + **tasksRepo.test.ts**
    - `TasksRepo` class with insert/updateStatus/listByRun/incrementRetryCount
    - Dual-API support with runtime detection
    - Retry fields: retry_count, max_retries, last_error
    - 2 tests: basic operations
 
-6. **src/contracts/ids.ts** + **ids.test.ts**
+8. **src/contracts/ids.ts** + **ids.test.ts**
    - ULID and ISODate validation schemas
    - 3 tests: ULID and ISO date validation
 
-7. **src/contracts/validation.ts** + **validation.test.ts**
+9. **src/contracts/validation.ts** + **validation.test.ts**
    - State machine definitions for tasks and runs
    - State transition validation
    - Record schema validation
    - 12 tests: all validation functions
 
 #### Scripts & Migrations
-8. **src/scripts/minimalFanoutRun.ts**
-   - End-to-end demonstration with 5 scenarios:
+10. **src/scripts/minimalFanoutRun.ts**
+   - End-to-end demonstration with 6 scenarios:
      1. All tasks succeed (SUCCEEDED propagation)
      2. One task fails (FAILED propagation)
      3. Partial completion (no premature aggregation)
      4. Automatic retry → success on second attempt
      5. Exhausted retries → permanent failure
+     6. **Monitoring & health reports → real-time observability**
 
-9. **migrations/001_initial_schema.sql**
-   - Creates `runs` table
+11. **migrations/001_initial_schema.sql**
+    - Creates `runs` table
 
-10. **migrations/002_tasks_and_events.sql**
+12. **migrations/002_tasks_and_events.sql**
     - Creates `tasks` and `events` tables
 
-11. **migrations/003_add_retry_fields.sql**
+13. **migrations/003_add_retry_fields.sql**
     - Adds `retry_count`, `max_retries`, `last_error` to tasks
 
-12. **src/test/utils/tempDb.ts**
+14. **src/test/utils/tempDb.ts**
     - Helper for creating temporary sql.js databases in tests
 
-13. **src/persistence/migrate.ts**
+15. **src/persistence/migrate.ts**
     - Migration runner
 
 ### Modified Files
 
-1. **src/persistence/repo/runsRepo.ts**
+1. **src/workers/fanoutWorker.ts**
+   - Added EventsRepo import and initialization
+   - Emits 6 event types: started, detected, created, completed, skipped, finished
+   - Tracks total children created for summary event
+   - All events include contextual payload data
+
+2. **src/workers/aggregateWorker.ts**
+   - Added EventsRepo import and initialization
+   - Emits 4 event types: started, task.aggregated, run.aggregated, finished
+   - Tracks parents aggregated and run aggregation status
+   - Events include state changes and reason data
+
+3. **src/workers/retryWorker.ts**
+   - Added EventsRepo import and initialization
+   - Emits 4 event types: started, task.retried, task.retries_exhausted, finished
+   - Tracks retriable vs exhausted tasks
+   - Events include retry counts and error messages
+
+4. **src/persistence/repo/runsRepo.ts**
+   - Added CANCELLED to RunState type definition
    - Removed `better-sqlite3` import
    - Changed `db` type from `Database` to `any` for dual-API support
    - Updated `insert()` and `get()` to handle both APIs
    - Detection: checks for `stmt.bind` (sql.js) vs `stmt.run` (better-sqlite3)
 
-2. **src/persistence/repo/tasksRepo.ts**
+5. **src/persistence/repo/tasksRepo.ts**
    - Added retry fields to `TaskRecord` interface
    - Updated `insert()` to include retry fields with defaults
    - Modified `updateStatus()` to track `last_error`
@@ -147,7 +208,13 @@ All Scenarios: 5/5 passing
    - Updated all methods for dual-API support
    - Fixed output JSON serialization
 
-3. **.gitignore**
+6. **src/scripts/minimalFanoutRun.ts**
+   - Added Monitor import
+   - Added Scenario 6: Monitoring & Health Reports
+   - Demonstrates health reports, retry metrics, run summaries, event querying
+   - Updated summary to include monitoring feature
+
+7. **.gitignore**
    - Added node_modules/, dist/, data/, tasks.json, PR_DETAILS.md
 
 ## Migration Changes
